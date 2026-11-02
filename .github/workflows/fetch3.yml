@@ -1,0 +1,22 @@
+name: fetch-img
+on: push
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p img
+          curl -sSL --fail -o img/animal1.png "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/ioPorjVpci2gCQHaKJUU/HcKmt9o7Uh1KWwKngrAs/content.png?Expires=1793642400&KeyName=assets-cdn-key-1&Signature=YT3S-gVXFujcC-8pWNgybXrWEGc="
+          curl -sSL --fail -o img/animal2.png "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/fQ2nTD8jGnSS8tyNFHK8/5SE6uth3qqvYSVyvB3MV/content.png?Expires=1793642400&KeyName=assets-cdn-key-1&Signature=BpjS61f1xAMbj9HaH6icf7Op524="
+          curl -sSL --fail -o img/plant1.png "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/FZqxyd8FBLhobd8C3GMh/m5ay8JykPEHYNYTUkMOl/content.png?Expires=1793642400&KeyName=assets-cdn-key-1&Signature=g-TmarbeX6S7CvyDqM3r_qb_pB0="
+          curl -sSL --fail -o img/plant2.png "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/bJT8ufKeEBOg65XHmQpV/yQclNixSIqcNTplDCx9j/content.png?Expires=1793642400&KeyName=assets-cdn-key-1&Signature=FeLKtwQ0IxUKFbhCPWL_f7tpFyw="
+          ls -la img
+          git config user.name "medilab-bot"
+          git config user.email "medilab-bot@users.noreply.github.com"
+          git pull --rebase || true
+          git add img
+          git commit -m "Add cell renders"
+          git push
