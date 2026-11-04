@@ -1,0 +1,18 @@
+name: fetch-vo3
+on: push
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p audio
+          curl -sSL --fail -o audio/vo3.mp3 "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/UPoBtVm6zUlnBSEYEXVI/P6kLatx3QtcsmxpZ2LjA/content.mp3?Expires=1793790000&KeyName=assets-cdn-key-1&Signature=Zgr131wB2lPFTA4UZP4qf_Q6yqc="
+          git config user.name "medilab-bot"
+          git config user.email "medilab-bot@users.noreply.github.com"
+          git pull --rebase || true
+          git add audio
+          git commit -m "Add vo3"
+          git push
