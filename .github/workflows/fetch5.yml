@@ -1,0 +1,19 @@
+name: fetch-live-app
+on: push
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p live/app live/lib live/data live/audio
+          B=https://app.medilabacademy.com
+          for f in index.html logo.jpg app/styles-v2.css app/app-v2.js app/sound.js app/mlicons.js app/achievements.js lib/normalize.js lib/aliases.js lib/search.js lib/quiz.js lib/validate.js lib/tiers.js audio/manifest.js data/topics.js data/subjects.js glossary.js crossword.html intro.mp4 icon-144.png manifest.json; do curl -sSL --fail -A "Mozilla/5.0" -o "live/$f" "$B/$f" || echo "miss $f"; done
+          ls -laR live
+          git config user.name "medilab-bot"
+          git config user.email "medilab-bot@users.noreply.github.com"
+          git add live
+          git commit -m "Mirror live app"
+          git push
