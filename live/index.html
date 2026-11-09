@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F0EEE8">
+<title>שליפים · SHLIFIM — מושגי ביולוגיה</title>
+<script>
+/* The installation link must not boot the full application or intro video. */
+if (new URLSearchParams(location.search).get('install') === '1' &&
+    !window.matchMedia('(display-mode: standalone)').matches &&
+    !window.navigator.standalone) {
+  location.replace(new URL('install.html', location.href).href);
+}
+</script>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="shortcut icon" href="logo.jpg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="שליפים">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app/styles-v2.css">
+<style>
+/* intro video overlay — plays on entry, then fades to reveal the app */
+#intro{position:fixed;inset:0;z-index:99999;background:#fff;display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity .55s ease}
+#intro.hide{opacity:0;pointer-events:none}
+#intro video{width:100%;height:100%;object-fit:contain;background:#fff}
+</style>
+</head>
+<body>
+<div id="intro" aria-hidden="true">
+  <video id="introVid" muted playsinline preload="none">
+    <source data-src="intro.mp4" type="video/mp4">
+  </video>
+</div>
+<div id="root"><div class="splash"><img src="logo.jpg" alt="MediLab"/><div class="splash-bar"><i></i></div></div></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="glossary.js"></script>
+<script src="data/subjects.js"></script>
+<script src="data/topics.js"></script>
+<script src="lib/normalize.js"></script>
+<script src="lib/aliases.js"></script>
+<script src="lib/search.js"></script>
+<script src="lib/quiz.js"></script>
+<script src="lib/validate.js"></script>
+<script src="lib/tiers.js"></script>
+<script src="app/achievements.js"></script>
+<script src="audio/manifest.js"></script>
+<script src="app/sound.js"></script>
+<script src="app/mlicons.js"></script>
+<script src="app/app-v2.js?v=72"></script>
+<script>
+/* intro video: play once per calendar day, then fade out to reveal the app. Self-healing. */
+(function(){
+  var intro=document.getElementById('intro'); if(!intro) return;
+  var appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  if(appleMobile || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)){
+    intro.parentNode.removeChild(intro); return;
+  }
+  var vid=document.getElementById('introVid'), done=false;
+  function hide(){ if(done) return; done=true; intro.classList.add('hide'); try{ vid && vid.pause(); }catch(e){} setTimeout(function(){ if(intro && intro.parentNode) intro.parentNode.removeChild(intro); },600); }
+  // show only on the first entry of the day — skip on refreshes / later entries the same day
+  var today=new Date().toDateString(), last=null;
+  try{ last=localStorage.getItem('ml-intro-day'); }catch(e){}
+  if(last===today){ if(intro.parentNode) intro.parentNode.removeChild(intro); return; }
+  try{ localStorage.setItem('ml-intro-day', today); }catch(e){}
+  if(vid){
+    vid.addEventListener('ended', hide);
+    vid.addEventListener('error', hide);
+    var source=vid.querySelector('source[data-src]');
+    if(source) source.src=source.getAttribute('data-src');
+    vid.load();
+    var p = vid.play && vid.play();
+    if(p && p.catch) p.catch(hide);
+  } else { hide(); }
+  intro.addEventListener('click', hide); // tap anywhere to dismiss (no visible button)
+  setTimeout(hide, 7000); // safety: never trap the user even if the video stalls
+})();
+</script>
+<script>
+/* desktop: let the mouse wheel scroll the horizontal topic + letter rows sideways (touch already swipes).
+   RTL-aware: in a right-to-left row, scrollLeft runs negative, so flip the wheel delta. */
+document.addEventListener('wheel', function(e){
+  var el = e.target.closest && e.target.closest('.chips, .letters');
+  if(el && el.scrollWidth > el.clientWidth + 2 && Math.abs(e.deltaY) > Math.abs(e.deltaX)){
+    var rtl = getComputedStyle(el).direction === 'rtl';
+    el.scrollLeft += (rtl ? -e.deltaY : e.deltaY);
+    e.preventDefault();
+  }
+}, {passive:false});
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('service-worker.js').then(function(reg){
+      reg.update();
+      // when a new version is found, ask it to activate as soon as it's installed
+      reg.addEventListener('updatefound',function(){
+        var sw=reg.installing;
+        if(!sw)return;
+        sw.addEventListener('statechange',function(){
+          if(sw.state==='installed' && navigator.serviceWorker.controller){ sw.postMessage('SKIP_WAITING'); }
+        });
+      });
+    }).catch(function(){});
+    // NOTE: intentionally NO controllerchange auto-reload. On iOS Safari the reload-on-
+    // service-worker-activation pattern can loop / interrupt the slow in-browser Babel compile
+    // and leave the app stuck loading. Network-first already serves fresh code on the next load.
+  });
+}
+</script>
+<style>
+  /* The bar sits ABOVE the floating bottom navigation. --cookiebar-nav is the measured distance
+     from the top of the nav to the bottom of the screen. */
+  #cookiebar{display:none;position:fixed;left:12px;right:12px;max-width:496px;margin:0 auto;
+    bottom:calc(var(--cookiebar-nav,0px) + 8px);z-index:60;
+    background:#15212C;color:#fff;padding:8px;border-radius:16px;
+    box-shadow:0 2px 6px rgba(8,12,18,.16),0 12px 28px rgba(8,12,18,.24);
+    font-family:'Assistant',system-ui,sans-serif;animation:cbIn .3s cubic-bezier(.2,.7,.2,1)}
+  @keyframes cbIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  #cookiebar .cb-in{display:flex;gap:8px;align-items:center}
+  #cookiebar p{flex:1;margin:0;font-size:12px;line-height:1.5}
+  #cookiebar a{color:#F5C969;text-decoration:underline;text-underline-offset:2px}
+  #cookieok{flex:0 0 auto;min-height:44px;min-width:88px;padding:0 16px;border:none;border-radius:12px;
+    background:#1B6FA8;color:#fff;font-weight:700;font-family:inherit;font-size:14px;cursor:pointer;white-space:nowrap;
+    transition:background .12s,transform .12s}
+  #cookieok:hover{background:#175F90}
+  #cookieok:active{background:#124C74;transform:scale(.97)}
+  /* second way out: an X, in case the main button is ever awkward to reach */
+  #cookiex{flex:0 0 auto;width:44px;height:44px;padding:0;border:none;border-radius:50%;
+    background:transparent;color:#fff;cursor:pointer;display:grid;place-items:center;transition:background .12s,transform .12s}
+  #cookiex:hover{background:rgba(255,255,255,.12)}
+  #cookiex:active{background:rgba(255,255,255,.16);transform:scale(.92)}
+  #cookiebar :focus-visible{outline:3px solid rgba(108,195,238,.7);outline-offset:2px}
+</style>
+<div id="cookiebar" role="dialog" aria-label="הודעת עוגיות">
+  <div class="cb-in">
+    <button id="cookiex" type="button" aria-label="סגירה"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <p>עוגיות ואחסון מקומי משמשים לתפעול האפליקציה ולשמירת ההעדפות שלך.
+      <a href="legal.html#privacy">פרטיות</a></p>
+    <button id="cookieok" type="button">אישור</button>
+  </div>
+</div>
+<script>
+(function(){
+  try{ if(localStorage.getItem('sl-cookie-ok')==='1') return; }catch(e){}
+  var bar=document.getElementById('cookiebar'); if(!bar) return;
+  // Keep the bar clear of the bottom nav. The nav is rendered by React, so poll briefly
+  // until it exists, then track it on resize (its height changes with the safe-area inset).
+  function place(){
+    var nav=document.querySelector('.nav');
+    var h=nav?Math.max(0,Math.round(window.innerHeight-nav.getBoundingClientRect().top)):0;
+    document.documentElement.style.setProperty('--cookiebar-nav', h+'px');
+  }
+  var tries=0;
+  var poll=setInterval(function(){ place(); if(document.querySelector('.nav')||++tries>40) clearInterval(poll); },150);
+  window.addEventListener('resize',place);
+  bar.style.display='block';
+  function dismiss(){
+    try{ localStorage.setItem('sl-cookie-ok','1'); }catch(e){}
+    bar.style.display='none';
+    clearInterval(poll);
+    window.removeEventListener('resize',place);
+    document.documentElement.style.removeProperty('--cookiebar-nav');
+  }
+  ['cookieok','cookiex'].forEach(function(id){
+    var b=document.getElementById(id); if(b) b.addEventListener('click',dismiss);
+  });
+})();
+</script>
+</body>
+</html>
