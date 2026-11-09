@@ -1,0 +1,18 @@
+name: fetch-pickups
+on: push
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p audio
+          curl -sSL --fail -o audio/pk_a.mp3 "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/I37erwpWqH717jUSO2Is/tyWhgbiKbAZkV2BPnSdp/content.mp3?Expires=1794250800&KeyName=assets-cdn-key-1&Signature=bKamXn3axfzG83ZrUCrtfyIW11I="
+          curl -sSL --fail -o audio/pk_b.mp3 "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/BcOdUCqysEmPUhdOmXyf/T9Qg0ERA7NKfttDsi5zg/content.mp3?Expires=1794250800&KeyName=assets-cdn-key-1&Signature=hU5O5lAkjFzng8nb4PGcEbjm-x4="
+          git config user.name "medilab-bot"
+          git config user.email "medilab-bot@users.noreply.github.com"
+          git add audio
+          git commit -m "Add pickups"
+          git push
