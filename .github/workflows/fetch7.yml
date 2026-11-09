@@ -1,0 +1,18 @@
+name: fetch-vo-shlifim2
+on: push
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p audio
+          curl -sSL --fail -o audio/shl2.mp3 "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/mfrQLMUlKG1SHb3aryMx/JEMG29qyuZITu1JJeFGm/content.mp3?Expires=1794247200&KeyName=assets-cdn-key-1&Signature=pE9WUcB49PDkv6JliLeqNmr39pU="
+          curl -sSL --fail -o audio/shl2_words.json "https://elevenlabsusercontent.com/database/workspace/611296a08b2341c9b984d95401a1f985/content_generation/PWrNGoOMFo7JW3dbWTsS/6uBYE9wXxstyGuF5ptet/words.json?response-content-disposition=attachment%3B%20filename%3D%22transcript-6uBYE9wXxstyGuF5ptet-words.json%22&Expires=1794247200&KeyName=assets-cdn-key-1&Signature=O3SxW0XmB0_CzyaDwMyOZHW0OCw="
+          git config user.name "medilab-bot"
+          git config user.email "medilab-bot@users.noreply.github.com"
+          git add audio
+          git commit -m "Add shlifim vo2"
+          git push
