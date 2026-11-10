@@ -1,0 +1,17 @@
+name: fetch-shlifim-icon
+on: push
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p live
+          curl -sSL --fail -A "Mozilla/5.0" -o live/shlifim-icon-512.png "https://medilabacademy.com/wp-content/plugins/medilab-site/assets/shlifim-icon-512.png"
+          git config user.name "medilab-bot"
+          git config user.email "medilab-bot@users.noreply.github.com"
+          git add live
+          git commit -m "Add shlifim icon"
+          git push
